@@ -7,7 +7,10 @@ import lombok.Setter;
 import org.example.itemcounting.enums.InvoiceStatus;
 import org.example.itemcounting.enums.InvoiceType;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcType;
+import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
 
 import java.time.LocalDateTime;
 
@@ -23,11 +26,13 @@ public class Invoice {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "type", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private InvoiceType type;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "status", nullable = false)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     private InvoiceStatus status = InvoiceStatus.DRAFT;
 
     @Column(columnDefinition = "TEXT")

@@ -43,4 +43,12 @@ public class Stock {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    public void addQuantity(BigDecimal amount) {
+        if (amount == null) return;
+        this.quantity = this.quantity.add(amount);
+        if (this.quantity.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("колличество должно быть больше 0");
+        }
+    }
 }
