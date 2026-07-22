@@ -1,13 +1,16 @@
 package org.example.itemcounting.business.service;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.example.itemcounting.entity.Invoice;
 import org.example.itemcounting.entity.InvoiceItem;
 import org.example.itemcounting.entity.Product;
 import org.example.itemcounting.enums.InvoiceStatus;
 import org.example.itemcounting.enums.InvoiceType;
+import org.example.itemcounting.event.GoodsReceivedEvent;
 import org.example.itemcounting.exception.EntityNotFoundException;
 import org.example.itemcounting.exception.IllegalInvoiceStateException;
 import org.example.itemcounting.exception.InvalidQuantityException;
+import org.example.itemcounting.kafka.GoodsReceivedProducer;
 import org.example.itemcounting.repository.InvoiceItemRepository;
 import org.example.itemcounting.repository.InvoiceRepository;
 import org.example.itemcounting.repository.ProductRepository;
@@ -19,16 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceItemRepository invoiceItemRepository;
     private final ProductRepository productRepository;
     private final StockService stockService;
-    
+    private final GoodsReceivedProducer goodsReceivedProducer;
+
     // создание накладной
     @Transactional
     public InvoiceDTO createInvoice(InvoiceDTO requestDto) {
@@ -75,6 +81,12 @@ public class InvoiceService {
         // COMPLETED
         invoice.setStatus(InvoiceStatus.COMPLETED);
         invoice = invoiceRepository.save(invoice);
+
+        if (type == InvoiceType.ARRIVAL) {
+            GoodsReceivedEvent event = mapToEvent(invoice, items);
+            goodsReceivedProducer.sendSync(event);
+            log.info("Событие GoodsReceivedEvent отправлено для накладной id={}", invoice.getId());
+        }
 
         return InvoiceDTO.fromEntity(invoice, items);
     }
@@ -143,5 +155,22 @@ public class InvoiceService {
             invoice.setStatus(InvoiceStatus.CANCELLED);
             invoiceRepository.save(invoice);
         }
+    }
+
+    private GoodsReceivedEvent mapToEvent(Invoice invoice, List<InvoiceItem> items) {
+        List<GoodsReceivedEvent.Item> eventItems = items.stream()
+                .map(item -> new GoodsReceivedEvent.Item(
+                        item.getProduct().getId(),
+                        item.getQuantity(),
+                        item.getPrice()
+                ))
+                .collect(Collectors.toList());
+
+        return new GoodsReceivedEvent(
+                invoice.getId(),
+                invoice.getComment(),
+                invoice.getCreatedAt().toString(),  // LocalDateTime → String
+                eventItems
+        );
     }
 }

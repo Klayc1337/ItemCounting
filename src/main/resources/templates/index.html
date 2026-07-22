@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Складской учёт</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Товарный учёт 2.0</h1>
+    <div class="nav">
+        <a th:href="@{/products}">Товары</a>
+        <a th:href="@{/invoices/arrival}">Приходные накладные</a>
+        <a th:href="@{/invoices/shipment}">Расходные накладные</a>
+        <a th:href="@{/stock}">Остатки</a>
+    </div>
+</div>
+</body>
+</html>
