@@ -12,18 +12,16 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class GoodsReceivedProducer {
 
-    private static final String TOPIC = "goods-received";
-
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     public void sendSync(GoodsReceivedEvent event) {
         try {
             String json = objectMapper.writeValueAsString(event);
-            kafkaTemplate.send(TOPIC, json).get();
-            log.info("Event sent: {}", json);
+            kafkaTemplate.send("goods-received", json).get();
+            log.info("событие отправлено: {}", json);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send event", e);
+            throw new RuntimeException("ошибка отправки события", e);
         }
     }
 }

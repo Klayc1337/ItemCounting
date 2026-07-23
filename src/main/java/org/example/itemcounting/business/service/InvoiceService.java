@@ -47,14 +47,12 @@ public class InvoiceService {
             throw new InvalidQuantityException("накладная должна содержать хотя бы 1 товар");
         }
 
-        // создаём сущность invoice
         Invoice invoice = new Invoice();
         invoice.setType(type);
         invoice.setStatus(InvoiceStatus.DRAFT);
         invoice.setComment(requestDto.getComment());
         invoice = invoiceRepository.save(invoice);
 
-        // создаём строки накладной
         List<InvoiceItem> items = new ArrayList<>();
         if (requestDto.getItems() != null) {
             for (InvoiceItemDTO itemDto : requestDto.getItems()) {
@@ -67,7 +65,6 @@ public class InvoiceService {
         }
         items = invoiceItemRepository.saveAll(items);
 
-        // обработка остатков
         if (type == InvoiceType.ARRIVAL) {
             for (InvoiceItem item : items) {
                 stockService.increaseStock(item.getProduct().getId(), item.getQuantity());
@@ -78,14 +75,13 @@ public class InvoiceService {
             }
         }
 
-        // COMPLETED
         invoice.setStatus(InvoiceStatus.COMPLETED);
         invoice = invoiceRepository.save(invoice);
 
         if (type == InvoiceType.ARRIVAL) {
-            GoodsReceivedEvent event = mapToEvent(invoice, items);
+            GoodsReceivedEvent event = GoodsReceivedEvent.mapToEvent(invoice, items);
             goodsReceivedProducer.sendSync(event);
-            log.info("Событие GoodsReceivedEvent отправлено для накладной id={}", invoice.getId());
+            log.info("событие отправлено для накладной id={}", invoice.getId());
         }
 
         return InvoiceDTO.fromEntity(invoice, items);
@@ -155,22 +151,5 @@ public class InvoiceService {
             invoice.setStatus(InvoiceStatus.CANCELLED);
             invoiceRepository.save(invoice);
         }
-    }
-
-    private GoodsReceivedEvent mapToEvent(Invoice invoice, List<InvoiceItem> items) {
-        List<GoodsReceivedEvent.Item> eventItems = items.stream()
-                .map(item -> new GoodsReceivedEvent.Item(
-                        item.getProduct().getId(),
-                        item.getQuantity(),
-                        item.getPrice()
-                ))
-                .collect(Collectors.toList());
-
-        return new GoodsReceivedEvent(
-                invoice.getId(),
-                invoice.getComment(),
-                invoice.getCreatedAt().toString(),  // LocalDateTime → String
-                eventItems
-        );
     }
 }

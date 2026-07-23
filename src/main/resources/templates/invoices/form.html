@@ -10,7 +10,7 @@
     <h1 th:if="${invoice.type == 'ARRIVAL'}">Новая приходная накладная</h1>
     <h1 th:if="${invoice.type == 'SHIPMENT'}">Новая расходная накладная</h1>
     <form th:action="${invoice.type == 'ARRIVAL'} ? @{/invoices/arrival/new} : @{/invoices/shipment/new}" method="post">
-        <!-- скрытые поля для type и status -->
+
         <input type="hidden" th:field="*{invoice.type}">
         <input type="hidden" th:field="*{invoice.status}">
 

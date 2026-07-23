@@ -17,10 +17,10 @@ public class ProductViewController {
     @GetMapping
     public String listProducts(Model model) {
         model.addAttribute("products", productService.getAllProducts());
-        return "products/list"; // templates/products.html
+        return "products/list";
     }
 
-    // Показать форму создания
+    // показать форму создания
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("product", new ProductDTO());
@@ -28,14 +28,14 @@ public class ProductViewController {
         return "products/form";
     }
 
-    // Обработка создания
+    // обработка создания
     @PostMapping("/new")
     public String createProduct(@ModelAttribute ProductDTO productDTO) {
         productService.createProduct(productDTO);
         return "redirect:/products";
     }
 
-    // Показать форму редактирования
+    // форма редактирования
     @GetMapping("/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model) {
         ProductDTO product = productService.getProductById(id);
@@ -44,21 +44,21 @@ public class ProductViewController {
         return "products/form";
     }
 
-    // Обработка обновления
+    // обработка обновления
     @PostMapping("/edit/{id}")
     public String updateProduct(@PathVariable Long id, @ModelAttribute ProductDTO productDTO) {
         productService.updateProduct(id, productDTO);
         return "redirect:/products";
     }
 
-    // Детали товара
+    // детали товара
     @GetMapping("/{id}")
     public String viewProduct(@PathVariable Long id, Model model) {
         model.addAttribute("product", productService.getProductById(id));
         return "products/detail";
     }
 
-    // Удаление (POST, так как DELETE не поддерживается в формах без JS)
+    // удаление
     @PostMapping("/delete/{id}")
     public String deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
@@ -67,6 +67,6 @@ public class ProductViewController {
 
     @GetMapping("/")
     public String index() {
-        return "index"; // имя шаблона без расширения
+        return "index";
     }
 }

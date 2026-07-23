@@ -53,7 +53,7 @@ public class InvoiceViewController {
     public String createArrivalInvoice(@ModelAttribute InvoiceDTO invoiceDTO) {
         invoiceDTO.setType(InvoiceType.ARRIVAL);
         invoiceDTO.setStatus(InvoiceStatus.DRAFT);
-        // Фильтруем пустые строки (где productId == null)
+
         if (invoiceDTO.getItems() != null) {
             invoiceDTO.setItems(
                     invoiceDTO.getItems().stream()
@@ -95,6 +95,7 @@ public class InvoiceViewController {
     public String createShipmentInvoice(@ModelAttribute InvoiceDTO invoiceDTO) {
         invoiceDTO.setType(InvoiceType.SHIPMENT);
         invoiceDTO.setStatus(InvoiceStatus.DRAFT);
+
         if (invoiceDTO.getItems() != null) {
             invoiceDTO.setItems(
                     invoiceDTO.getItems().stream()
@@ -106,7 +107,9 @@ public class InvoiceViewController {
         return "redirect:/invoices/shipment";
     }
 
-    // ----- Общие методы -----
+
+
+
     @GetMapping("/{id}")
     public String viewInvoice(@PathVariable Long id, Model model) {
         InvoiceDTO invoice = invoiceService.getInvoiceById(id);
@@ -117,7 +120,7 @@ public class InvoiceViewController {
     @PostMapping("/{id}/cancel")
     public String cancelInvoice(@PathVariable Long id) {
         invoiceService.cancelInvoice(id);
-        // возвращаемся на список того же типа
+
         InvoiceDTO invoice = invoiceService.getInvoiceById(id);
         if (invoice.getType() == InvoiceType.ARRIVAL) {
             return "redirect:/invoices/arrival";
