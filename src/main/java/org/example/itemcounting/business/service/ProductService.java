@@ -46,7 +46,7 @@ public class ProductService {
     }
 
     //обновление(частичное)
-    public ProductDTO updateNote(Long id, ProductDTO productDTO) {
+    public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
         Product product = productRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("продукта с id не найдено: " + id));
 
         if(productDTO.getName() != null){

@@ -5,6 +5,8 @@ import org.example.itemcounting.business.service.ProductService;
 import org.example.itemcounting.rest.dto.ProductDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +30,7 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
+
     // получить по id
     @GetMapping("/{id}")
     public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
@@ -40,7 +43,7 @@ public class ProductController {
             @PathVariable Long id,
             @RequestBody ProductDTO request) {
 
-        ProductDTO updated = productService.updateNote(id,request);
+        ProductDTO updated = productService.updateProduct(id,request);
 
         return ResponseEntity.ok(updated);
     }

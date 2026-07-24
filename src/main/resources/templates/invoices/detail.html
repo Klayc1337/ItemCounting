@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Детали накладной</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Накладная #<span th:text="${invoice.id}">1</span></h1>
+    <p><strong>Тип:</strong> <span th:text="${invoice.type}">ARRIVAL</span></p>
+    <p><strong>Статус:</strong> <span th:text="${invoice.status}">DRAFT</span></p>
+    <p><strong>Комментарий:</strong> <span th:text="${invoice.comment}">Комментарий</span></p>
+    <p><strong>Общая сумма:</strong> <span th:text="${invoice.totalAmount}">0.00</span></p>
+    <p><strong>Создана:</strong> <span th:text="${invoice.createdAt}">2025-01-01</span></p>
+
+    <h3>Товары</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>Товар</th>
+            <th>Количество</th>
+            <th>Цена</th>
+            <th>Сумма</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="item : ${invoice.items}">
+            <td th:text="${item.productName}">Мыло</td>
+            <td th:text="${item.quantity}">10</td>
+            <td th:text="${item.price}">5.50</td>
+            <td th:text="${item.price != null ? item.price.multiply(item.quantity) : 0}">55.00</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div>
+        <a th:href="@{${invoice.type == 'ARRIVAL' ? '/invoices/arrival' : '/invoices/shipment'}}">Назад к списку</a>
+        <form th:if="${invoice.status == 'DRAFT' || invoice.status == 'COMPLETED'}" th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post" style="display:inline;">
+            <button type="submit" class="button-danger">Отменить накладную</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Детали товара</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Товар: <span th:text="${product.name}">Мыло</span></h1>
+    <p><strong>ID:</strong> <span th:text="${product.id}">1</span></p>
+    <p><strong>Артикул:</strong> <span th:text="${product.sku}">SOAP-001</span></p>
+    <p><strong>Ед. изм.:</strong> <span th:text="${product.unit}">шт</span></p>
+    <p><strong>Создан:</strong> <span th:text="${product.createdAt}">2025-01-01</span></p>
+    <p><strong>Обновлён:</strong> <span th:text="${product.updatedAt}">2025-01-01</span></p>
+    <a th:href="@{/products}">Назад к списку</a>
+</div>
+</body>
+</html>

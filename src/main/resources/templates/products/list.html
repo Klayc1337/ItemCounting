@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Товары</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<div class="container">
+    <h1>Список товаров</h1>
+    <div class="nav">
+        <a th:href="@{/}">Главная</a>
+        <a th:href="@{/products/new}">Добавить товар</a>
+    </div>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Артикул</th>
+            <th>Ед. изм.</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${products}">
+            <td th:text="${p.id}">1</td>
+            <td th:text="${p.name}">Мыло</td>
+            <td th:text="${p.sku}">SOAP-001</td>
+            <td th:text="${p.unit}">шт</td>
+            <td>
+                <a th:href="@{/products/{id}(id=${p.id})}">Просмотр</a>
+                <a th:href="@{/products/edit/{id}(id=${p.id})}">Редактировать</a>
+                <form th:action="@{/products/delete/{id}(id=${p.id})}" method="post" style="display:inline;">
+                    <button type="submit" class="button-danger">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>
