@@ -20,14 +20,6 @@ import java.util.stream.Collectors;
 public class StockService {
     private final StockRepository stockRepository;
     private final ProductRepository productRepository;
-
-    
-    // получить остаток по ID товара
-    @Transactional(readOnly = true)
-    public StockDTO getStockByProductId(Long productId) {
-        Stock stock = stockRepository.findByProductId(productId).orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + productId));
-        return StockDTO.fromEntity(stock);
-    }
     
     // получить все остатки
     @Transactional(readOnly = true)
