@@ -22,10 +22,7 @@ public class ProductService {
             throw new DuplicateSkuException(" продукт с SKU " + productDTO.getSku() + " уже существует");
         }
 
-        Product product = new Product();
-        product.setName(productDTO.getName());
-        product.setSku(productDTO.getSku());
-        product.setUnit(productDTO.getUnit());
+        Product product = productDTO.toEntity();
         Product saved = productRepository.save(product);
         return ProductDTO.fromEntity(saved);
     }

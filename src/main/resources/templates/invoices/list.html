@@ -32,7 +32,7 @@
             <td th:text="${inv.createdAt}">2025-01-01</td>
             <td>
                 <a th:href="@{/invoices/{id}(id=${inv.id})}">Просмотр</a>
-                <form th:if="${inv.status == 'DRAFT' || inv.status == 'COMPLETED'}" th:action="@{/invoices/{id}/cancel(id=${inv.id})}" method="post" style="display:inline;">
+                <form th:if="${inv.status.name() == 'DRAFT' || inv.status == 'COMPLETED'}" th:action="@{/invoices/{id}/cancel(id=${inv.id})}" method="post" style="display:inline;">
                     <button type="submit" class="button-danger">Отменить</button>
                 </form>
             </td>

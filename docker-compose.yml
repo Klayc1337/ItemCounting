@@ -1,11 +1,10 @@
-version: '1'
+version: '1.1'
 services:
   kafka:
     image: confluentinc/cp-kafka:latest
     ports:
       - "9092:9092"
     environment:
-      # Режим работы: в одиночном режиме (без кластера)
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_NODE_ID: 1
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:29093
@@ -17,12 +16,27 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_LOG_RETENTION_MS: 604800000  # 7 дней
-      KAFKA_LOG_SEGMENT_BYTES: 1073741824 # 1 ГБ
-      # Автосоздание топиков при отправке сообщений
+      KAFKA_LOG_RETENTION_MS: 604800000
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
     volumes:
       - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    container_name: postgres_invoice
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: itemCounting
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
 volumes:
   kafka_data:
+  pg_data:

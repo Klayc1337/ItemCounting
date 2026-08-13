@@ -9,7 +9,7 @@
 <div class="container">
     <h1 th:if="${action == 'create'}">Новый товар</h1>
     <h1 th:if="${action == 'edit'}">Редактирование товара</h1>
-    <form th:action="${action == 'create'} ? @{/products/new} : @{/products/edit/{id}(id=${product.id})}" method="post">
+    <form th:action="@{${action == 'create' ? '/products/new' : '/products/edit/{id}(id=${product.id})'}}" method="post">
         <div class="form-group">
             <label>Название:</label>
             <input type="text" th:field="*{product.name}" required>

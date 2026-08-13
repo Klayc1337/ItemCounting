@@ -9,7 +9,7 @@
 <div class="container">
     <h1 th:if="${invoice.type == 'ARRIVAL'}">Новая приходная накладная</h1>
     <h1 th:if="${invoice.type == 'SHIPMENT'}">Новая расходная накладная</h1>
-    <form th:action="${invoice.type == 'ARRIVAL'} ? @{/invoices/arrival/new} : @{/invoices/shipment/new}" method="post">
+    <form th:action="@{${invoice.type.name() == 'ARRIVAL' ? '/invoices/arrival/new' : '/invoices/shipment/new'}}" method="post">
 
         <input type="hidden" th:field="*{invoice.type}">
         <input type="hidden" th:field="*{invoice.status}">
@@ -42,7 +42,8 @@
         </div>
 
         <button type="submit" class="button-success">Сохранить накладную</button>
-        <a th:href="${invoice.type == 'ARRIVAL'} ? @{/invoices/arrival} : @{/invoices/shipment}">Отмена</a>
+        <a th:href="@{${invoice.type.name() == 'ARRIVAL' ? '/invoices/arrival' : '/invoices/shipment'}}">Отмена</a>
+        <p th:text="'Тип: ' + ${invoice.type}"></p>
     </form>
 </div>
 </body>

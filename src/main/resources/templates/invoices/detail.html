@@ -35,8 +35,8 @@
     </table>
 
     <div>
-        <a th:href="@{${invoice.type == 'ARRIVAL' ? '/invoices/arrival' : '/invoices/shipment'}}">Назад к списку</a>
-        <form th:if="${invoice.status == 'DRAFT' || invoice.status == 'COMPLETED'}" th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post" style="display:inline;">
+        <a th:href="@{${invoice.type.name() == 'ARRIVAL' ? '/invoices/arrival' : '/invoices/shipment'}}">Назад к списку</a>
+        <form th:if="${invoice.status.name() == 'DRAFT' || invoice.status.name() == 'COMPLETED'}" th:action="@{/invoices/{id}/cancel(id=${invoice.id})}" method="post" style="display:inline;">
             <button type="submit" class="button-danger">Отменить накладную</button>
         </form>
     </div>

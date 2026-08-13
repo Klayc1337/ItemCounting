@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,6 +60,12 @@ public class StockService {
         stockRepository.save(stock);
     }
 
+    // возвращает сущность Stock для указанного товара
+    @Transactional(readOnly = true)
+    public Stock getStockByProductId(Long productId) {
+        return stockRepository.findByProductId(productId)
+                .orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + productId));
+    }
     
     // создаёт запись остатка для нового товара
     private Stock createNewStock(Long productId) {

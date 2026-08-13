@@ -25,7 +25,7 @@ public class InvoiceViewController {
     // ----- Приходные накладные -----
     @GetMapping("/arrival")
     public String listArrivalInvoices(Model model) {
-        List<InvoiceDTO> invoices = invoiceService.getAllInvoices(InvoiceType.ARRIVAL, null);
+        List<InvoiceDTO> invoices = invoiceService.getAllInvoicesByType(InvoiceType.ARRIVAL);
         model.addAttribute("invoices", invoices);
         model.addAttribute("type", "ARRIVAL");
         return "invoices/list";
@@ -68,7 +68,7 @@ public class InvoiceViewController {
     // ----- Расходные накладные -----
     @GetMapping("/shipment")
     public String listShipmentInvoices(Model model) {
-        List<InvoiceDTO> invoices = invoiceService.getAllInvoices(InvoiceType.SHIPMENT, null);
+        List<InvoiceDTO> invoices = invoiceService.getAllInvoicesByType(InvoiceType.SHIPMENT);
         model.addAttribute("invoices", invoices);
         model.addAttribute("type", "SHIPMENT");
         return "invoices/list";
@@ -106,9 +106,6 @@ public class InvoiceViewController {
         invoiceService.createInvoice(invoiceDTO);
         return "redirect:/invoices/shipment";
     }
-
-
-
 
     @GetMapping("/{id}")
     public String viewInvoice(@PathVariable Long id, Model model) {

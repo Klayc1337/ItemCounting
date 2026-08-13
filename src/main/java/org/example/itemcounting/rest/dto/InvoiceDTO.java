@@ -1,6 +1,7 @@
 package org.example.itemcounting.rest.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.itemcounting.entity.Invoice;
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class InvoiceDTO {
 
     private Long id;

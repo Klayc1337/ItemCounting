@@ -1,9 +1,6 @@
 package org.example.itemcounting.entity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
@@ -14,13 +11,14 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table(
         name = "stock",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = "product_id")
         }
 )
-public class Stock {
+public class Stock extends UpdateOnlyEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -39,10 +37,6 @@ public class Stock {
             scale = 3
     )
     private BigDecimal quantity;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 
     public void addQuantity(BigDecimal amount) {
         if (amount == null) return;

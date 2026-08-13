@@ -1,4 +1,4 @@
-package org.example.itemcounting;
+package org.example.itemcounting.stockService;
 
 import org.example.itemcounting.business.service.StockService;
 import org.example.itemcounting.entity.Product;
@@ -12,23 +12,22 @@ import org.example.itemcounting.rest.dto.StockDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
  * Интеграционные тесты для {@link StockService}.
- * <p>
- * Все изменения в БД откатываются после каждого теста благодаря {@link Transactional}.
  */
+@DataJpaTest
+@Import(StockService.class)
 @ActiveProfiles("test")
-@Transactional
-@SpringBootTest
 public class StockServiceIntegrationTest {
 
     @Autowired
@@ -44,10 +43,11 @@ public class StockServiceIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        product = new Product();
-        product.setName("Test Product");
-        product.setSku("TEST-SKU-001");
-        product.setUnit("шт");
+        product = Product.builder()
+                .name("Test Product")
+                .sku("TEST-001")
+                .unit("шт")
+                .build();
         product = productRepository.save(product);
     }
 
@@ -59,12 +59,8 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: список содержит один элемент с корректными полями.
      */
     @Test
-    void getAllStocks_shouldReturnAllStocks() {
-
-        Stock stock = new Stock();
-        stock.setProduct(product);
-        stock.setQuantity(BigDecimal.valueOf(15.5));
-        stockRepository.save(stock);
+    void getAllStocks() {
+        Stock stock = createStock(BigDecimal.valueOf(15.5));
 
         List<StockDTO> result = stockService.getAllStocks();
 
@@ -83,12 +79,9 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: количество становится 15.5.
      */
     @Test
-    void increaseStock_whenStockExists_shouldIncreaseQuantity() {
+    void increaseStock_whenHaveProduct() {
 
-        Stock stock = new Stock();
-        stock.setProduct(product);
-        stock.setQuantity(BigDecimal.valueOf(10));
-        stock = stockRepository.save(stock);
+        Stock stock = createStock(BigDecimal.valueOf(10));
 
         stockService.increaseStock(product.getId(), BigDecimal.valueOf(5.5));
 
@@ -106,7 +99,7 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: создаётся новый остаток с количеством 7.0.
      */
     @Test
-    void increaseStock_whenStockDoesNotExist_shouldCreateNewStock() {
+    void increaseStock_whenStockNotHaveProduct() {
 
         stockService.increaseStock(product.getId(), BigDecimal.valueOf(7.0));
 
@@ -124,7 +117,7 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: исключение с соответствующим сообщением, остаток в БД отсутствует.
      */
     @Test
-    void increaseStock_withInvalidQuantity_shouldThrowInvalidQuantityException() {
+    void increaseStock_withInvalidQuantity() {
 
         Long productId = product.getId();
 
@@ -152,12 +145,10 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: количество становится 12.
      */
     @Test
-    void decreaseStock_whenSufficientStock_shouldDecreaseQuantity() {
+    void decreaseStock() {
 
-        Stock stock = new Stock();
-        stock.setProduct(product);
-        stock.setQuantity(BigDecimal.valueOf(20));
-        stock = stockRepository.save(stock);
+        Stock stock = createStock(BigDecimal.valueOf(20));
+
 
         stockService.decreaseStock(product.getId(), BigDecimal.valueOf(8));
 
@@ -173,7 +164,7 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: исключение с сообщением о том, что продукт не найден.
      */
     @Test
-    void decreaseStock_whenStockNotFound_shouldThrowEntityNotFoundException() {
+    void decreaseStock_whenStockNotFound() {
 
         assertThatThrownBy(() -> stockService.decreaseStock(product.getId(), BigDecimal.valueOf(5)))
                 .isInstanceOf(EntityNotFoundException.class)
@@ -189,12 +180,9 @@ public class StockServiceIntegrationTest {
      * Ожидаемый результат: исключение, количество остаётся прежним.
      */
     @Test
-    void decreaseStock_whenInsufficientStock_shouldThrowInsufficientStockException() {
+    void decreaseStock_whenQuantityLow() {
 
-        Stock stock = new Stock();
-        stock.setProduct(product);
-        stock.setQuantity(BigDecimal.valueOf(5));
-        stock = stockRepository.save(stock);
+        Stock stock = createStock(BigDecimal.valueOf(5));
 
         assertThatThrownBy(() -> stockService.decreaseStock(product.getId(), BigDecimal.valueOf(10)))
                 .isInstanceOf(InsufficientStockException.class)
@@ -214,7 +202,7 @@ public class StockServiceIntegrationTest {
      * количество остаётся прежним.
      */
     @Test
-    void decreaseStock_withInvalidQuantity_shouldThrowInvalidQuantityException() {
+    void decreaseStock_withInvalidQuantity() {
 
         Long productId = product.getId();
 
@@ -229,5 +217,14 @@ public class StockServiceIntegrationTest {
         assertThatThrownBy(() -> stockService.decreaseStock(productId, BigDecimal.valueOf(-1)))
                 .isInstanceOf(InvalidQuantityException.class)
                 .hasMessage("колличество должно быть больше 0");
+    }
+
+    private Stock createStock(BigDecimal quantity) {
+        Stock stock = Stock.builder()
+                .product(product)
+                .quantity(quantity)
+                .build();
+        stockRepository.save(stock);
+        return stock;
     }
 }

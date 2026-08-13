@@ -35,7 +35,7 @@ public class InvoiceController {
     // получение приходных накладных
     @GetMapping("/arrival")
     public ResponseEntity<List<InvoiceDTO>> getArrivalInvoices() {
-        List<InvoiceDTO> invoices = invoiceService.getAllInvoices(InvoiceType.ARRIVAL, null);
+        List<InvoiceDTO> invoices = invoiceService.getAllInvoicesByType(InvoiceType.ARRIVAL);
         return ResponseEntity.ok(invoices);
     }
 
@@ -56,7 +56,7 @@ public class InvoiceController {
     // история отгрузок
     @GetMapping("/shipment")
     public ResponseEntity<List<InvoiceDTO>> getShipmentInvoices() {
-        List<InvoiceDTO> invoices = invoiceService.getAllInvoices(InvoiceType.SHIPMENT, null);
+        List<InvoiceDTO> invoices = invoiceService.getAllInvoicesByType(InvoiceType.SHIPMENT);
         return ResponseEntity.ok(invoices);
     }
 

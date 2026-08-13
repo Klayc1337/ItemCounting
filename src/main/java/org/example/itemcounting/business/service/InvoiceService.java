@@ -10,7 +10,6 @@ import org.example.itemcounting.event.GoodsReceivedEvent;
 import org.example.itemcounting.exception.EntityNotFoundException;
 import org.example.itemcounting.exception.IllegalInvoiceStateException;
 import org.example.itemcounting.exception.InvalidQuantityException;
-import org.example.itemcounting.kafka.GoodsReceivedProducer;
 import org.example.itemcounting.repository.InvoiceItemRepository;
 import org.example.itemcounting.repository.InvoiceRepository;
 import org.example.itemcounting.repository.ProductRepository;
@@ -18,11 +17,8 @@ import org.example.itemcounting.rest.dto.InvoiceDTO;
 import org.example.itemcounting.rest.dto.InvoiceItemDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,11 +29,12 @@ public class InvoiceService {
     private final InvoiceItemRepository invoiceItemRepository;
     private final ProductRepository productRepository;
     private final StockService stockService;
-    private final GoodsReceivedProducer goodsReceivedProducer;
+    private final OutboxEventService outboxEventService;
+
 
     // создание накладной
     @Transactional
-    public InvoiceDTO createInvoice(InvoiceDTO requestDto) {
+    public InvoiceDTO createInvoice(InvoiceDTO requestDto){
         InvoiceType type = requestDto.getType();
         if (type == null) {
             throw new IllegalArgumentException("у накладной должен быть тип");
@@ -47,49 +44,24 @@ public class InvoiceService {
             throw new InvalidQuantityException("накладная должна содержать хотя бы 1 товар");
         }
 
-        Invoice invoice = new Invoice();
-        invoice.setType(type);
-        invoice.setStatus(InvoiceStatus.DRAFT);
-        invoice.setComment(requestDto.getComment());
-        invoice = invoiceRepository.save(invoice);
+        Invoice invoice = saveInvoice(type, requestDto);
 
-        List<InvoiceItem> items = new ArrayList<>();
-        if (requestDto.getItems() != null) {
-            for (InvoiceItemDTO itemDto : requestDto.getItems()) {
-                Product product = productRepository.findById(itemDto.getProductId())
-                        .orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + itemDto.getProductId()));
+        List<InvoiceItem> items = saveItems(requestDto, invoice,type);
 
-                InvoiceItem item = itemDto.toEntity(invoice, product);
-                items.add(item);
-            }
-        }
-        items = invoiceItemRepository.saveAll(items);
-
-        if (type == InvoiceType.ARRIVAL) {
-            for (InvoiceItem item : items) {
-                stockService.increaseStock(item.getProduct().getId(), item.getQuantity());
-            }
-        } else if (type == InvoiceType.SHIPMENT) {
-            for (InvoiceItem item : items) {
-                stockService.decreaseStock(item.getProduct().getId(), item.getQuantity());
-            }
-        }
 
         invoice.setStatus(InvoiceStatus.COMPLETED);
         invoice = invoiceRepository.save(invoice);
 
-        if (type == InvoiceType.ARRIVAL) {
-            GoodsReceivedEvent event = GoodsReceivedEvent.mapToEvent(invoice, items);
-            goodsReceivedProducer.sendSync(event);
-            log.info("событие отправлено для накладной id={}", invoice.getId());
-        }
+//        if (type == InvoiceType.ARRIVAL) {
+//            GoodsReceivedEvent event = GoodsReceivedEvent.mapToEvent(invoice, items);
+//            outboxEventService.saveGoodsReceivedEvent(event);
+//        }
 
         return InvoiceDTO.fromEntity(invoice, items);
     }
 
     
     // накладная по id
-    @Transactional(readOnly = true)
     public InvoiceDTO getInvoiceById(Long id) {
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("нет элемента с id: " + id));
@@ -98,31 +70,30 @@ public class InvoiceService {
         return InvoiceDTO.fromEntity(invoice, items);
     }
 
-    
-    // все накладные
-    @Transactional(readOnly = true)
-    public List<InvoiceDTO> getAllInvoices(InvoiceType type, InvoiceStatus status) {
-        List<Invoice> invoices;
+    public List<InvoiceDTO> getAllInvoices() {
+        List<Invoice> invoices = invoiceRepository.findAll();
 
-        if (type != null && status != null) {
-            invoices = invoiceRepository.findByTypeAndStatus(type, status);
-        } else if (type != null) {
-            invoices = invoiceRepository.findByType(type);
-        } else if (status != null) {
-            invoices = invoiceRepository.findByStatus(status);
-        } else {
-            invoices = invoiceRepository.findAll();
-        }
-
-        return invoices.stream()
-                .map(invoice -> {
-                    List<InvoiceItem> items = invoiceItemRepository.findByInvoiceId(invoice.getId());
-                    return InvoiceDTO.fromEntity(invoice, items);
-                })
-                .collect(Collectors.toList());
+        return getItemsByInvoice(invoices);
     }
 
-    
+    public List<InvoiceDTO> getAllInvoicesByTypeAndStatus(InvoiceType type, InvoiceStatus status) {
+        List<Invoice> invoices = invoiceRepository.findByTypeAndStatus(type, status);
+
+        return getItemsByInvoice(invoices);
+    }
+
+    public List<InvoiceDTO> getAllInvoicesByType(InvoiceType type) {
+        List<Invoice> invoices = invoiceRepository.findByType(type);
+
+        return getItemsByInvoice(invoices);
+    }
+
+    public List<InvoiceDTO> getAllInvoicesByStatus(InvoiceStatus status) {
+        List<Invoice> invoices = invoiceRepository.findByStatus(status);
+
+        return getItemsByInvoice(invoices);
+    }
+
     //отмена накладной
     @Transactional
     public void cancelInvoice(Long id) {
@@ -151,5 +122,49 @@ public class InvoiceService {
             invoice.setStatus(InvoiceStatus.CANCELLED);
             invoiceRepository.save(invoice);
         }
+    }
+
+    private Invoice saveInvoice(InvoiceType type, InvoiceDTO requestDto){
+        Invoice invoice = new Invoice();
+        invoice.setType(type);
+        invoice.setStatus(InvoiceStatus.DRAFT);
+        invoice.setComment(requestDto.getComment());
+        invoice = invoiceRepository.save(invoice);
+        return invoice;
+    }
+
+    @Transactional
+    protected List<InvoiceItem> saveItems(InvoiceDTO requestDto, Invoice invoice, InvoiceType type){
+        List<InvoiceItem> items = new ArrayList<>();
+        if (requestDto.getItems() != null) {
+            for (InvoiceItemDTO itemDto : requestDto.getItems()) {
+                Product product = productRepository.findById(itemDto.getProductId())
+                        .orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + itemDto.getProductId()));
+
+                InvoiceItem item = itemDto.toEntity(invoice, product);
+                items.add(item);
+            }
+        }
+        items = invoiceItemRepository.saveAll(items);
+
+        if (type == InvoiceType.ARRIVAL) {
+            for (InvoiceItem item : items) {
+                stockService.increaseStock(item.getProduct().getId(), item.getQuantity());
+            }
+        } else if (type == InvoiceType.SHIPMENT) {
+            for (InvoiceItem item : items) {
+                stockService.decreaseStock(item.getProduct().getId(), item.getQuantity());
+            }
+        }
+        return items;
+    }
+
+    private List<InvoiceDTO> getItemsByInvoice(List<Invoice> invoices){
+        return invoices.stream()
+                .map(invoice -> {
+                    List<InvoiceItem> items = invoiceItemRepository.findByInvoiceId(invoice.getId());
+                    return InvoiceDTO.fromEntity(invoice, items);
+                })
+                .collect(Collectors.toList());
     }
 }

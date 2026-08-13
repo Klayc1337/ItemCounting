@@ -1,9 +1,6 @@
 package org.example.itemcounting.entity;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.example.itemcounting.enums.InvoiceStatus;
 import org.example.itemcounting.enums.InvoiceType;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,7 +17,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "invoice")
-public class Invoice {
+@Builder
+public class Invoice extends AuditEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -37,12 +35,4 @@ public class Invoice {
 
     @Column(columnDefinition = "TEXT")
     private String comment;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
 }
