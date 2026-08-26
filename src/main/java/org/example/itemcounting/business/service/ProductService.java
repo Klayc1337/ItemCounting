@@ -7,6 +7,8 @@ import org.example.itemcounting.repository.ProductRepository;
 import org.example.itemcounting.rest.dto.ProductDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
