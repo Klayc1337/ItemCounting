@@ -2,13 +2,15 @@ package org.example.itemcounting.rest.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.itemcounting.business.service.InvoiceService;
+import org.example.itemcounting.business.service.InvoiceSummCalculationService;
 import org.example.itemcounting.enums.InvoiceStatus;
 import org.example.itemcounting.enums.InvoiceType;
 import org.example.itemcounting.rest.dto.InvoiceDTO;
-import org.example.itemcounting.rest.dto.InvoiceItemDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InvoiceController {
     private final InvoiceService invoiceService;
+    private final InvoiceSummCalculationService calculationService;
 
     // ---------- Приходные накладные ----------
     // создание приходной накладной
@@ -71,5 +74,17 @@ public class InvoiceController {
     public ResponseEntity<Void> cancelInvoice(@PathVariable Long id) {
         invoiceService.cancelInvoice(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/summ")
+    public ResponseEntity<BigDecimal> getTotal(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "default") String strategy,
+            @RequestParam(required = false) String deliveryTime) {
+
+        LocalDateTime time = (deliveryTime != null) ? LocalDateTime.parse(deliveryTime) : LocalDateTime.now();
+
+        BigDecimal total = calculationService.calculateInvoiceTotal(id, strategy, time);
+        return ResponseEntity.ok(total);
     }
 }

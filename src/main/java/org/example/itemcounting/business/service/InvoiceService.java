@@ -46,7 +46,7 @@ public class InvoiceService {
 
         Invoice invoice = saveInvoice(type, requestDto);
 
-        List<InvoiceItem> items = saveItems(requestDto, invoice,type);
+        List<InvoiceItem> items = saveItems(requestDto, invoice, type);
 
 
         invoice.setStatus(InvoiceStatus.COMPLETED);
@@ -111,13 +111,13 @@ public class InvoiceService {
         if (invoice.getStatus() == InvoiceStatus.COMPLETED) {
             List<InvoiceItem> items = invoiceItemRepository.findByInvoiceId(id);
             if (invoice.getType() == InvoiceType.ARRIVAL) {
-                for (InvoiceItem item : items) {
-                    stockService.decreaseStock(item.getProduct().getId(), item.getQuantity());
-                }
+                items.forEach(item ->
+                        stockService.decreaseStock(item.getProduct().getId(), item.getQuantity())
+                );
             } else if (invoice.getType() == InvoiceType.SHIPMENT) {
-                for (InvoiceItem item : items) {
-                    stockService.increaseStock(item.getProduct().getId(), item.getQuantity());
-                }
+                items.forEach(item ->
+                        stockService.increaseStock(item.getProduct().getId(), item.getQuantity())
+                );
             }
             invoice.setStatus(InvoiceStatus.CANCELLED);
             invoiceRepository.save(invoice);

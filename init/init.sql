@@ -56,3 +56,11 @@ CREATE TABLE IF NOT EXISTS invoice_item (
     CONSTRAINT fk_invoice_item_invoice FOREIGN KEY (invoice_id) REFERENCES invoice(id) on delete cascade,
     CONSTRAINT fk_invoice_item_product FOREIGN KEY (product_id) REFERENCES product(id) on delete restrict
     );
+
+CREATE TABLE IF NOT EXISTS user_coeff (
+    id          BIGSERIAL PRIMARY KEY,
+    group_name  VARCHAR(50) UNIQUE NOT NULL,
+    coefficient NUMERIC(10, 4) NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
