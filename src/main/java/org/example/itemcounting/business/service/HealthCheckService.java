@@ -1,12 +1,16 @@
 package org.example.itemcounting.business.service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.itemcounting.BaseResponse;
+import org.example.itemcounting.rest.dto.InvoiceDTO;
 import org.example.itemcounting.rest.dto.RequestValue;
 import org.example.itemcounting.rest.dto.ResponseValue;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -14,49 +18,40 @@ import java.util.UUID;
 public class HealthCheckService {
     private final WebClient webClient;
 
-    public Mono<String> validate() {
+    public Mono<BaseResponse<InvoiceDTO>> validate(InvoiceDTO invoice) {
         RequestValue requestBody = new RequestValue("", 0);
 
         return webClient.post()
                 .uri("/api/validate")
                 .header("RequestID", UUID.randomUUID().toString())
-                .bodyValue(requestBody)
+                .bodyValue(invoice)
                 .retrieve()
-                .toEntity(ResponseValue.class)
+                .toEntity(new ParameterizedTypeReference<BaseResponse<InvoiceDTO>>() {})
                 .flatMap(response -> {
                     if (response.getStatusCode().is2xxSuccessful()) {
-                        ResponseValue body = response.getBody();
+                        BaseResponse<InvoiceDTO> baseResponse = response.getBody();
+                        if (baseResponse == null) {
+                            return Mono.error(new RuntimeException("response body пустое"));
+                        }
 
-                        if (body != null && (body.errors() == null || body.errors().isEmpty())) {
-                            return Mono.just("success");
+                        if ("success".equals(baseResponse.getStatus())) {
+                            if (baseResponse.getData() != null) {
+                                return Mono.just(baseResponse);
+                            } else {
+                                return Mono.error(new RuntimeException("статус Success но data пустое"));
+                            }
                         } else {
-                            String error = body != null ? String.join(", ", body.errors()) : "неизвестные ошибки";
-                            return Mono.just("Ошибки: " + error);
+                            List<String> errors = baseResponse.getErrors();
+                            if(errors != null && !errors.isEmpty()) {
+                                return Mono.just(baseResponse);
+                            } else {
+                                return Mono.error(new RuntimeException("errors пустое"));
+                            }
                         }
                     } else {
-                        return Mono.just("http ошибка: " + response.getStatusCode());
+                        return Mono.error(new RuntimeException("ошибка HTTP" + response.getStatusCode()));
                     }
                 })
-                .onErrorResume(e -> Mono.just("Исключение: " + e.getMessage()));
+                .onErrorResume(e -> Mono.error(new RuntimeException("Исключения: " + e.getMessage(), e)));
     }
 }
-
-
-//private final WebClient webClient;
-//
-//public boolean serviceAlive() {
-//    try {
-//        String requestId = UUID.randomUUID().toString();
-//        ResponseEntity<String> response = webClient.post()
-//                .uri("/actuator/health")
-//                .header("HealthReq", requestId)
-//                .
-//                    .retrieve()
-//                .toEntity(String.class)
-//
-//
-//        return response != null && response.getStatusCode().is2xxSuccessful();
-//    } catch (Exception e) {
-//        return false;
-//    }
-//}

@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -79,12 +78,9 @@ public class InvoiceController {
     @GetMapping("/{id}/summ")
     public ResponseEntity<BigDecimal> getTotal(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "default") String strategy,
-            @RequestParam(required = false) String deliveryTime) {
+            @RequestParam(defaultValue = "default") String strategy) {
 
-        LocalDateTime time = (deliveryTime != null) ? LocalDateTime.parse(deliveryTime) : LocalDateTime.now();
-
-        BigDecimal total = calculationService.calculateInvoiceTotal(id, strategy, time);
+        BigDecimal total = calculationService.calculateInvoiceTotal(id, strategy);
         return ResponseEntity.ok(total);
     }
 }
