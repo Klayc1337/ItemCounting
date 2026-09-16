@@ -39,12 +39,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String group = jwtService.extractGroup(token);
 
                 if (username != null && group != null) {
-                    List<GrantedAuthority> authorities =
-                            Collections.singletonList( new SimpleGrantedAuthority(group) );
+                    // Добавляем authority без префикса для использования с hasAuthority()
+                    List<GrantedAuthority> authorities = Collections.singletonList(new SimpleGrantedAuthority(group));
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    
+
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }

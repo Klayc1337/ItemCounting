@@ -28,6 +28,7 @@ public class HealthCheckService {
                 .flatMap(response -> {
                     if (response.getStatusCode().is2xxSuccessful()) {
                         BaseResponse<InvoiceDTO> baseResponse = response.getBody();
+
                         if (baseResponse == null) {
                             return Mono.error(new RuntimeException("response body пустое"));
                         }
@@ -36,7 +37,7 @@ public class HealthCheckService {
                             if (baseResponse.getData() != null) {
                                 return Mono.just(baseResponse);
                             } else {
-                                return Mono.error(new RuntimeException("статус Success но data пустое"));
+                                return Mono.error(new RuntimeException("статус Success, но data пустое"));
                             }
                         } else {
                             List<String> errors = baseResponse.getErrors();
