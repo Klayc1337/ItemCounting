@@ -19,8 +19,6 @@ public class HealthCheckService {
     private final WebClient webClient;
 
     public Mono<BaseResponse<InvoiceDTO>> validate(InvoiceDTO invoice) {
-        RequestValue requestBody = new RequestValue("", 0);
-
         return webClient.post()
                 .uri("/api/validate")
                 .header("RequestID", UUID.randomUUID().toString())

@@ -5,6 +5,7 @@ import org.example.itemcounting.business.service.InvoiceService;
 import org.example.itemcounting.business.service.InvoiceSummCalculationService;
 import org.example.itemcounting.enums.InvoiceStatus;
 import org.example.itemcounting.enums.InvoiceType;
+import org.example.itemcounting.enums.PricingStrategyType;
 import org.example.itemcounting.rest.dto.InvoiceDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -78,7 +79,7 @@ public class InvoiceController {
     @GetMapping("/{id}/summ")
     public ResponseEntity<BigDecimal> getTotal(
             @PathVariable Long id,
-            @RequestParam(defaultValue = "default") String strategy) {
+            @RequestParam(defaultValue = "default") PricingStrategyType strategy) {
 
         BigDecimal total = calculationService.calculateInvoiceTotal(id, strategy);
         return ResponseEntity.ok(total);

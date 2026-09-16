@@ -2,6 +2,7 @@ package org.example.itemcounting.business.service;
 
 import lombok.RequiredArgsConstructor;
 import org.example.itemcounting.entity.UserCoeff;
+import org.example.itemcounting.enums.PricingStrategyType;
 import org.example.itemcounting.repository.UserCoeffRepository;
 import org.example.itemcounting.rest.dto.InvoiceDTO;
 import org.example.itemcounting.strategy.InvoicePricingStrategy;
@@ -22,7 +23,7 @@ public class InvoiceSummCalculationService {
     private final InvoicePricingStrategyFactory strategyFactory;
 
     @Transactional(readOnly = true)
-    public BigDecimal calculateInvoiceTotal(Long invoiceId, String strategyType) {
+    public BigDecimal calculateInvoiceTotal(Long invoiceId, PricingStrategyType strategyType) {
         InvoiceDTO invoiceDto = invoiceService.getInvoiceById(invoiceId);
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

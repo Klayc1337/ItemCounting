@@ -3,6 +3,7 @@ package org.example.itemcounting.strategy;
 import lombok.RequiredArgsConstructor;
 import org.example.itemcounting.business.service.DistanceService;
 import org.example.itemcounting.entity.DeliveryTimeCoefficient;
+import org.example.itemcounting.enums.PricingStrategyType;
 import org.example.itemcounting.rest.dto.InvoiceDTO;
 import org.example.itemcounting.repository.DeliveryTimeCoefficientRepository;
 import org.springframework.stereotype.Component;
@@ -43,5 +44,10 @@ public class DeliveryPricingStrategy implements InvoicePricingStrategy {
                 .setScale(2, RoundingMode.HALF_UP);
 
         return baseTotal.add(deliveryCost);
+    }
+
+    @Override
+    public PricingStrategyType getType() {
+        return PricingStrategyType.DELIVERY;
     }
 }
