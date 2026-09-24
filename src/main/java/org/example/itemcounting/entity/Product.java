@@ -4,6 +4,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -27,4 +28,16 @@ public class Product extends AuditEntity {
 
     @Column(nullable = false, length = 20)
     private String unit;
+
+    private BigDecimal width;
+    private BigDecimal height;
+    private BigDecimal depth;
+    private BigDecimal weight;
+
+    @Column(precision = 15, scale = 2)
+    private BigDecimal price;
+
+    @Column(name = "min_stock_level", precision = 15, scale = 3)
+    private BigDecimal minStockLevel = BigDecimal.ZERO;
+
 }

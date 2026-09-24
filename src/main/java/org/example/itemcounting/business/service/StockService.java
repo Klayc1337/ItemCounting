@@ -2,15 +2,17 @@ package org.example.itemcounting.business.service;
 import lombok.RequiredArgsConstructor;
 import org.example.itemcounting.entity.Product;
 import org.example.itemcounting.entity.Stock;
+import org.example.itemcounting.entity.Warehouse;
+import org.example.itemcounting.entity.WarehouseLocation;
 import org.example.itemcounting.exception.EntityNotFoundException;
 import org.example.itemcounting.exception.InsufficientStockException;
 import org.example.itemcounting.exception.InvalidQuantityException;
-import org.example.itemcounting.repository.ProductRepository;
-import org.example.itemcounting.repository.StockRepository;
+import org.example.itemcounting.repository.*;
 import org.example.itemcounting.rest.dto.StockDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,61 +21,56 @@ import java.util.stream.Collectors;
 public class StockService {
     private final StockRepository stockRepository;
     private final ProductRepository productRepository;
-    
-    // получить все остатки
-    @Transactional(readOnly = true)
-    public List<StockDTO> getAllStocks() {
-        return stockRepository.findAll().stream()
-                .map(StockDTO::fromEntity)
-                .collect(Collectors.toList());
-    }
+    private final WarehouseRepository warehouseRepository;
+    private final WarehouseLocationRepository locationRepository;
+    private final UserRepository userRepository;
 
-//      увеличить остаток (приход)
-//      если записи нет то создать новую
-//      используется ри создании приходной накладной
     @Transactional
-    public void increaseStock(Long productId, BigDecimal quantity) {
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidQuantityException("колличество должно быть больше 0");
+    public void addStock(Long productId, Long warehouseId, Long locationId, BigDecimal quantity,
+                         String referenceType, Long referenceId, Long userId, String comment) {
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
+
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new IllegalArgumentException("Склад не найден"));
+
+        WarehouseLocation location = locationId != null
+                ? locationRepository.findById(locationId).orElse(null)
+                : null;
+
+        Stock stock = stockRepository.findByProductAndWarehouseAndLocation(product, warehouse, location)
+                .orElseGet(() -> {
+                    Stock newStock = new Stock();
+                    newStock.setProduct(product);
+                    newStock.setWarehouse(warehouse);
+                    newStock.setLocation(location);
+                    newStock.setQuantity(BigDecimal.ZERO);
+                    return newStock;
+                });
+
+        BigDecimal oldQuantity = stock.getQuantity();
+        stock.setQuantity(oldQuantity.add(quantity));
+
+        if (stock.getQuantity().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalStateException("Недостаточно товара на складе");
         }
 
-        Stock stock = stockRepository.findByProductId(productId).orElseGet(() -> createNewStock(productId));
-
-        stock.addQuantity(quantity);
-    }
-
-    // уменьшить остаток (расход)
-    @Transactional
-    public void decreaseStock(Long productId, BigDecimal quantity) {
-        if (quantity == null || quantity.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new InvalidQuantityException("колличество должно быть больше 0");
-        }
-
-        Stock stock = stockRepository.findByProductIdWithLock(productId)
-                .orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + productId));
-
-        if (stock.getQuantity().compareTo(quantity) < 0) {
-            throw new InsufficientStockException("недостаточно запасов");
-        }
-
-        stock.addQuantity(quantity.negate());
+        stock.setUpdatedAt(LocalDateTime.now());
         stockRepository.save(stock);
+
+        // Логируем движение
+        //logMovement();
     }
 
-    // возвращает сущность Stock для указанного товара
-    @Transactional(readOnly = true)
-    public Stock getStockByProductId(Long productId) {
-        return stockRepository.findByProductId(productId)
-                .orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + productId));
+    @Transactional
+    public void removeStock(Long productId, Long warehouseId, BigDecimal quantity,
+                            String referenceType, Long referenceId, Long userId, String comment) {
+        addStock(productId, warehouseId, null, quantity.negate(), referenceType, referenceId, userId, comment);
     }
-    
-    // создаёт запись остатка для нового товара
-    private Stock createNewStock(Long productId) {
-        Product product = productRepository.findById(productId).orElseThrow(() -> new EntityNotFoundException("нет продукта с id: " + productId));
 
-        Stock newStock = new Stock();
-        newStock.setProduct(product);
-        newStock.setQuantity(BigDecimal.ZERO);
-        return stockRepository.save(newStock);
+    // общий остаток товара на складе
+    public BigDecimal getTotalStockInWarehouse(Long productId, Long warehouseId) {
+        return stockRepository.getTotalQuantityByProductAndWarehouse(productId, warehouseId);
     }
 }

@@ -4,11 +4,13 @@ import org.example.itemcounting.entity.Product;
 import org.example.itemcounting.exception.DuplicateSkuException;
 import org.example.itemcounting.exception.EntityNotFoundException;
 import org.example.itemcounting.repository.ProductRepository;
+import org.example.itemcounting.rest.dto.ProductCreateRequestDTO;
 import org.example.itemcounting.rest.dto.ProductDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,15 +21,31 @@ public class ProductService {
 
     // создание товара
     @Transactional
-    public ProductDTO createProduct(ProductDTO productDTO) {
-        if (productRepository.existsBySku(productDTO.getSku())) {
-            throw new DuplicateSkuException(" продукт с SKU " + productDTO.getSku() + " уже существует");
+    public Product createProduct(ProductCreateRequestDTO request) {
+        if (productRepository.existsBySku(request.getSku())) {
+            throw new DuplicateSkuException(" Товар с артикулом " + request.getSku() + " уже существует");
         }
 
-        Product product = productDTO.toEntity();
-        Product saved = productRepository.save(product);
-        return ProductDTO.fromEntity(saved);
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setSku(request.getSku());
+        product.setUnit(request.getUnit());
+        product.setPrice(request.getPrice());
+        product.setMinStockLevel(request.getMinStockLevel());
+        product.setWidth(request.getWidth());
+        product.setHeight(request.getHeight());
+        product.setDepth(request.getDepth());
+        product.setWeight(request.getWeight());
+        product.setCreatedAt(LocalDateTime.now());
+        product.setUpdatedAt(LocalDateTime.now());
+        //Product saved = productRepository.save(product);
+        return productRepository.save(product);
     }
+
+
+
+
+
 
     // получение по id
     @Transactional(readOnly = true)

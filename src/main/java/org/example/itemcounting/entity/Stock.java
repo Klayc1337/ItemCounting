@@ -31,11 +31,15 @@ public class Stock extends UpdateOnlyEntity {
     )
     private Product product;
 
-    @Column(
-            nullable = false,
-            precision = 15,
-            scale = 3
-    )
+    @ManyToOne
+    @JoinColumn(name = "warehouse_id")
+    private Warehouse warehouse;
+
+    @ManyToOne
+    @JoinColumn(name = "location_id")
+    private WarehouseLocation location;
+
+    @Column(nullable = false, precision = 15, scale = 3)
     private BigDecimal quantity;
 
     public void addQuantity(BigDecimal amount) {
