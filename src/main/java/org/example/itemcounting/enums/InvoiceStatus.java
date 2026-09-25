@@ -5,5 +5,6 @@ public enum InvoiceStatus {
     CONFIRMED,    // подтверждена
     IN_PROGRESS,  // выполняется / товар в движении
     COMPLETED,    // полностью проведена
-    CANCELLED
+    CANCELLED,
+    WAIT
 }

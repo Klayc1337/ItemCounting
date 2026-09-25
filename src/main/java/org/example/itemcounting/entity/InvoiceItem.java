@@ -37,6 +37,9 @@ public class InvoiceItem extends CreateOnlyEntity{
     @Column(nullable = false, precision = 15, scale = 3)
     private BigDecimal quantity;
 
+    @Column(nullable = false, precision = 15, scale = 3)
+    private BigDecimal quantityNeed;
+
     @Column(precision = 15, scale = 2)
     private BigDecimal price;
 }

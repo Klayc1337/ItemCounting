@@ -31,6 +31,8 @@ public class StoreRequestService {
         Warehouse warehouse = warehouseRepository.findById(order.getWarehouseId())
                 .orElseThrow(() -> new IllegalArgumentException("Склад магазина не найден"));
 
+        boolean enoughStock = true;
+
         StoreOrder storeOrder = new StoreOrder();
         storeOrder.setWarehouse(warehouse);
         storeOrder.setStatus(RequestStatus.PENDING);
@@ -41,31 +43,9 @@ public class StoreRequestService {
 
         for (StoreOrderCreateDTO.RequestItemRequest itemReq : order.getItems()) {
 
-            Product product = productRepository.findById(itemReq.getProductId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                                        "Товар не найден: " + itemReq.getProductId())
-                    );
-
-            BigDecimal available = stockService.getTotalStockInWarehouse(
-                    product.getId(),
-                    warehouse.getId()
-            );
-
-            if (available.compareTo(itemReq.getQuantity()) < 0) {
-                throw new IllegalStateException(
-                        String.format(
-                                "Недостаточно товара '%s' на складе магазина. " +
-                                        "Доступно: %s, запрошено: %s",
-                                product.getName(),
-                                available,
-                                itemReq.getQuantity()
-                        )
-                );
-            }
-
             StoreRequestItem requestItem = new StoreRequestItem();
             requestItem.setRequest(storeOrder);
-            requestItem.setProduct(product);
+            requestItem.setProduct(getProductById(itemReq));
             requestItem.setRequestedQuantity(itemReq.getQuantity());
             requestItem.setCreatedAt(LocalDateTime.now());
 
@@ -90,13 +70,16 @@ public class StoreRequestService {
             invoiceItem.setInvoice(invoice);
             invoiceItem.setProduct(requestItem.getProduct());
             invoiceItem.setQuantity(requestItem.getRequestedQuantity());
+            invoiceItem.setQuantityNeed(getAvailable(requestItem.getProduct(), warehouse).add(requestItem.getRequestedQuantity()).negate());
             invoiceItem.setPrice(requestItem.getProduct().getPrice());
             invoiceItem.setCreatedAt(LocalDateTime.now());
+            enoughStock = invoiceItem.getQuantityNeed().compareTo(BigDecimal.valueOf(0)) < 0 ? false : true;
 
             invoice.getItems().add(invoiceItem);
         }
 
         invoiceRepository.save(invoice);
+
 
         for (InvoiceItem item : invoice.getItems()) {
             stockService.removeStock(
@@ -110,17 +93,38 @@ public class StoreRequestService {
             );
         }
 
-        invoice.setStatus(InvoiceStatus.COMPLETED);
-        invoice.setConfirmedBy(user);
-        invoice.setConfirmedAt(LocalDateTime.now());
-        invoice.setUpdatedAt(LocalDateTime.now());
+        if (enoughStock) {
+            invoice.setStatus(InvoiceStatus.COMPLETED);
+            invoice.setConfirmedBy(user);
+            invoice.setConfirmedAt(LocalDateTime.now());
 
+            storeOrder.setStatus(RequestStatus.APPROVED);
+            storeOrder.setApprovedBy(user);
+        } else {
+            invoice.setStatus(InvoiceStatus.WAIT);
+        }
+
+        invoice.setUpdatedAt(LocalDateTime.now());
         invoiceRepository.save(invoice);
 
-        storeOrder.setStatus(RequestStatus.APPROVED);
-        storeOrder.setApprovedBy(user);
         storeOrder.setUpdatedAt(LocalDateTime.now());
+
 
         return requestRepository.save(storeOrder);
     }
+
+    private BigDecimal getAvailable(Product product, Warehouse warehouse){
+        return stockService.getTotalStockInWarehouse(
+                product.getId(),
+                warehouse.getId()
+        );
+    }
+
+    private Product getProductById(StoreOrderCreateDTO.RequestItemRequest itemReq){
+        return productRepository.findById(itemReq.getProductId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Товар не найден: " + itemReq.getProductId())
+                );
+    }
+
 }
