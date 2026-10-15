@@ -17,7 +17,7 @@ public class StoreOrder extends AuditEntity{
 
     @ManyToOne
     @JoinColumn(name = "warehouse", nullable = false)
-    private Warehouse Warehouse;
+    private Warehouse warehouse;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

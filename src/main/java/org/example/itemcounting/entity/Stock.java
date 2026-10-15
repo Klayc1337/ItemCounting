@@ -41,12 +41,4 @@ public class Stock extends UpdateOnlyEntity {
 
     @Column(nullable = false, precision = 15, scale = 3)
     private BigDecimal quantity;
-
-    public void addQuantity(BigDecimal amount) {
-        if (amount == null) return;
-        this.quantity = this.quantity.add(amount);
-        if (this.quantity.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("колличество должно быть больше 0");
-        }
-    }
 }
