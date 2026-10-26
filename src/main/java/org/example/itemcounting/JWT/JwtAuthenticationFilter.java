@@ -4,6 +4,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import org.example.itemcounting.business.service.JwtService;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -34,18 +36,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (auth != null && auth.startsWith("Bearer ")) {
             String token = auth.substring(7);
 
-            if (SecurityContextHolder.getContext().getAuthentication() == null && jwtService.isTokenValid(token)) {
-                String username = jwtService.extractUsername(token);
-                String group = jwtService.extractGroup(token);
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                try {
+                    Claims claims = jwtService.extractAllClaims(token);
+                    String username = claims.getSubject();
+                    String group = claims.get("group", String.class);
+                    Long userId = claims.get("userId", Long.class);
+                    Long warehouseId = claims.get("warehouseId", Long.class);
 
-                if (username != null && group != null) {
-                    List<GrantedAuthority> authorities =
-                            Collections.singletonList( new SimpleGrantedAuthority(group) );
+                    if (username != null && group != null && userId != null) {
+                        List<GrantedAuthority> authorities =
+                                Collections.singletonList(new SimpleGrantedAuthority(group));
 
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(username, null, authorities);
+                        UsernamePasswordAuthenticationToken authToken =
+                                new UsernamePasswordAuthenticationToken(
+                                        new AuthenticatedUser(userId, username, warehouseId), null, authorities);
                     
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                    }
+                } catch (JwtException | IllegalArgumentException ex) {
+                    SecurityContextHolder.clearContext();
                 }
             }
         }

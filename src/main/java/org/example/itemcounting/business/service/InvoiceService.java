@@ -113,4 +113,8 @@ public class InvoiceService {
         }
         return invoice;
     }
+
+    public List<Invoice> getByStatus(InvoiceStatus status){
+        return invoiceRepository.findByStatus(status);
+    }
 }

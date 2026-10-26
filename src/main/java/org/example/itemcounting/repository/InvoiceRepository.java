@@ -17,6 +17,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     // накладные по статусу
     List<Invoice> findByStatus(InvoiceStatus status);
 
+    List<Invoice> findByStatusAndFromWarehouseId(InvoiceStatus status, Long warehouseId);
+
     //по типу
     List<Invoice> findByType(InvoiceType type);
 }

@@ -26,8 +26,7 @@ public class Stock extends UpdateOnlyEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "product_id",
-            nullable = false,
-            foreignKey = @ForeignKey(name = "fk_stock_product")
+            nullable = false
     )
     private Product product;
 

@@ -6,4 +6,5 @@ public enum InvoiceType {
     SALE,
     RETURN_FROM_CUSTOMER,
     RETURN_TO_SUPPLIER,
+    TRANSFER
 }

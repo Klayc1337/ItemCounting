@@ -5,11 +5,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.example.itemcounting.entity.User;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.HashMap;
 
 @Service
 public class JwtService {
@@ -24,7 +26,17 @@ public class JwtService {
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String username, Map<String, Object> extraClaims) {
+    public String generateToken(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        claims.put("group", user.getRole().name());
+        if (user.getWarehouse() != null) {
+            claims.put("warehouseId", user.getWarehouse().getId());
+        }
+        return generateToken(user.getUsername(), claims);
+    }
+
+    private String generateToken(String username, Map<String, Object> extraClaims) {
         return Jwts.builder()
                 .claims(extraClaims)
                 .subject(username)

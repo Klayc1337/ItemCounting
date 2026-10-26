@@ -3,7 +3,7 @@ package org.example.itemcounting.kafka;
 import lombok.extern.slf4j.Slf4j;
 import org.example.itemcounting.entity.OutboxEvent;
 import org.example.itemcounting.repository.OutboxEventRepository;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,19 +25,27 @@ public class OutboxScheduler {
         this.kafkaTemplate = kafkaTemplate;
     }
 
-    //@Scheduled(cron = "${itemcounting.shedule.cron}")
+    @Value("${replenishment.request-topic}")
+    private String requestTopic;
+
+    @Scheduled(fixedDelayString = "${replenishment.request-time}")
     public void processOutbox() {
         List<OutboxEvent> events = outboxEventRepository.findBySentAtIsNullOrderByCreatedAtAsc();
 
         for (OutboxEvent event : events) {
             try {
-                kafkaTemplate.send("goods-received", event.getJsonEvent()).get();
+                String topic = requestTopic;
+
+                kafkaTemplate.send(topic, event.getId().toString(), event.getJsonEvent()).get(30, TimeUnit.SECONDS);
                 event.setSentAt(LocalDateTime.now());
                 outboxEventRepository.save(event);
                 log.info("сохранено в БД и отправлено");
             } catch (Exception e) {
                 log.error("ошибка отправки outbox-события id={}: {}", event.getId(), e.getMessage());
-                outboxEventRepository.save(event);
+                if (e instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
             }
         }
     }

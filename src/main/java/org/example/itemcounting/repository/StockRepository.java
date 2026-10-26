@@ -20,6 +20,8 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     List<Stock> findByWarehouseIn(Collection<Warehouse> warehouses);
 
+    List<Stock> findByWarehouseId(Long warehouseId);
+
     @Query("SELECT COALESCE(SUM(s.quantity), 0) FROM Stock s WHERE s.product.id = :productId AND s.warehouse.id = :warehouseId")
     BigDecimal getTotalQuantityByProductAndWarehouse(Long productId, Long warehouseId);
 }
