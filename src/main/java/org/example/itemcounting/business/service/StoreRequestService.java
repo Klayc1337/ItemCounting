@@ -10,7 +10,6 @@ import org.example.itemcounting.rest.dto.StoreOrderCreateDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -20,7 +19,7 @@ public class StoreRequestService {
     private final WarehouseRepository warehouseRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
-    private final StockService stockService;
+    private final WaitingInvoiceService waitingInvoiceService;
     private final InvoiceRepository invoiceRepository;
 
     @Transactional
@@ -30,8 +29,6 @@ public class StoreRequestService {
 
         Warehouse warehouse = warehouseRepository.findById(order.getWarehouseId())
                 .orElseThrow(() -> new IllegalArgumentException("Склад магазина не найден"));
-
-        boolean enoughStock = true;
 
         StoreOrder storeOrder = new StoreOrder();
         storeOrder.setWarehouse(warehouse);
@@ -56,7 +53,7 @@ public class StoreRequestService {
 
         Invoice invoice = new Invoice();
         invoice.setType(InvoiceType.SHIPMENT);
-        invoice.setStatus(InvoiceStatus.DRAFT);
+        invoice.setStatus(InvoiceStatus.WAIT);
         invoice.setFromWarehouse(warehouse);
         invoice.setToWarehouse(warehouse);
         invoice.setCreatedBy(user);
@@ -70,10 +67,9 @@ public class StoreRequestService {
             invoiceItem.setInvoice(invoice);
             invoiceItem.setProduct(requestItem.getProduct());
             invoiceItem.setQuantity(requestItem.getRequestedQuantity());
-            invoiceItem.setQuantityNeed(getAvailable(requestItem.getProduct(), warehouse).add(requestItem.getRequestedQuantity()).negate());
+            invoiceItem.setQuantityNeed(requestItem.getRequestedQuantity());
             invoiceItem.setPrice(requestItem.getProduct().getPrice());
             invoiceItem.setCreatedAt(LocalDateTime.now());
-            enoughStock = invoiceItem.getQuantityNeed().compareTo(BigDecimal.valueOf(0)) < 0 ? false : true;
 
             invoice.getItems().add(invoiceItem);
         }
@@ -81,27 +77,14 @@ public class StoreRequestService {
         invoiceRepository.save(invoice);
 
 
-        for (InvoiceItem item : invoice.getItems()) {
-            stockService.removeStock(
-                    item.getProduct().getId(),
-                    warehouse.getId(),
-                    item.getQuantity(),
-                    "INVOICE",
-                    invoice.getId(),
-                    userId,
-                    "Расход по накладной #" + invoice.getId()
-            );
-        }
+        waitingInvoiceService.completeIfStockAvailable(invoice.getId());
 
-        if (enoughStock) {
-            invoice.setStatus(InvoiceStatus.COMPLETED);
+        if (invoice.getStatus() == InvoiceStatus.COMPLETED) {
             invoice.setConfirmedBy(user);
             invoice.setConfirmedAt(LocalDateTime.now());
 
             storeOrder.setStatus(RequestStatus.APPROVED);
             storeOrder.setApprovedBy(user);
-        } else {
-            invoice.setStatus(InvoiceStatus.WAIT);
         }
 
         invoice.setUpdatedAt(LocalDateTime.now());
@@ -111,13 +94,6 @@ public class StoreRequestService {
 
 
         return requestRepository.save(storeOrder);
-    }
-
-    private BigDecimal getAvailable(Product product, Warehouse warehouse){
-        return stockService.getTotalStockInWarehouse(
-                product.getId(),
-                warehouse.getId()
-        );
     }
 
     private Product getProductById(StoreOrderCreateDTO.RequestItemRequest itemReq){

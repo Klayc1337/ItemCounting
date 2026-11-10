@@ -26,7 +26,7 @@ public class ReplenishmentReplyListener {
 
         if (!request.getWarehouse().getId().equals(reply.warehouseId())
                 || !request.getCentralWarehouse().getId().equals(reply.centralWarehouseId())) {
-            throw new IllegalArgumentException("Reply warehouses do not match the request");
+            throw new IllegalArgumentException("Reply warehouses не совпадает с реквестом");
         }
 
         if (request.getStatus() == RequestStatus.COMPLETED) {
